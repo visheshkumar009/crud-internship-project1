@@ -1,76 +1,45 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+const express = require("express");
+const cors = require("cors");
 
-function App() {
-  const [items, setItems] = useState([]);
-  const [newItem, setNewItem] = useState("");
-  const [editId, setEditId] = useState(null);
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-  // Backend se items fetch karna
-  useEffect(() => {
-    fetchItems();
-  }, []);
+let items = [
+  { id: 1, name: "Milk" },
+  { id: 2, name: "Bread" },
+];
 
-  const fetchItems = async () => {
-    const res = await axios.get("http://localhost:5000/items");
-    setItems(res.data);
-  };
+// GET all items
+app.get("/items", (req, res) => {
+  res.json(items);
+});
 
-  const addItem = async () => {
-    if (!newItem.trim()) return;
+// ADD item
+app.post("/items", (req, res) => {
+  const newItem = { id: Date.now(), name: req.body.name };
+  items.push(newItem);
+  res.json(newItem);
+});
 
-    if (editId) {
-      await axios.put(`http://localhost:5000/items/${editId}`, {
-        name: newItem,
-      });
-      setEditId(null);
-    } else {
-      await axios.post("http://localhost:5000/items", { name: newItem });
-    }
-
-    setNewItem("");
-    fetchItems();
-  };
-
-  const deleteItem = async (id) => {
-    await axios.delete(`http://localhost:5000/items/${id}`);
-    fetchItems();
-  };
-
-  const editItem = (item) => {
-    setNewItem(item.name);
-    setEditId(item.id);
-  };
-
-  return (
-    <div style={{ maxWidth: "400px", margin: "50px auto", textAlign: "center" }}>
-      <h1>🛒 Shopping List</h1>
-      <input
-        type="text"
-        placeholder="Enter item"
-        value={newItem}
-        onChange={(e) => setNewItem(e.target.value)}
-      />
-      <button onClick={addItem}>{editId ? "Update" : "Add"}</button>
-
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {items.map((item) => (
-          <li key={item.id} style={{ margin: "10px 0" }}>
-            {item.name}
-            <button onClick={() => editItem(item)} style={{ marginLeft: "10px" }}>
-              Edit
-            </button>
-            <button
-              onClick={() => deleteItem(item.id)}
-              style={{ marginLeft: "10px", color: "red" }}
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+// UPDATE item
+app.put("/items/:id", (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  items = items.map((item) =>
+    item.id == id ? { ...item, name } : item
   );
-}
+  res.json({ success: true });
+});
 
-export default App;
+// DELETE item
+app.delete("/items/:id", (req, res) => {
+  const { id } = req.params;
+  items = items.filter((item) => item.id != id);
+  res.json({ success: true });
+});
+
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});
